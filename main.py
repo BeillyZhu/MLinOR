@@ -7,8 +7,41 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error
 from sklearn.pipeline import Pipeline
 
+# Read the csv file
 file_path = 'Assignment1-Data.csv'
 X, y = read(file_path)
+
+# Get and report the number of observations and features
 n, p = np.shape(X)
 print (f"{n} observations with {p} features")
 
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
+
+# Create a pipeline both for scaling and Elastic Net regression
+pipeline = Pipeline([
+    ('scaler', StandardScaler()),     # for scaling
+    ('elasticnet', ElasticNet())     # for applying the elastic net regression
+])
+
+# Define the hyperparameter grid
+params_grid = {
+    'elasticnet__alpha': [0.1, 1, 10, 100],     #penalty parameter (regularization strength)
+    'elasticnet__l1_ratio': [0.1, 0.3, 0.5, 0.7, 0.9, 1.0]   # mixing parameter (L1 - L2 ratio)
+}
+
+# Grid search with 10-fold Cross Validation (CV)
+grid_search = GridSearchCV(pipeline, params_grid, cv=10, scoring = 'neg_mean_squared_error')
+
+# Fit the model
+grid_search.fit(X_train, y_train)
+
+# Obtain the best model and then test it on the test data
+best_model = grid_search.best_estimator_
+y_pred = best_model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+
+# Report the best hyperparameters and the MSE
+print(f'Best Hyperparameters: {grid_search.best_params_}')
+print(f'The Mean Squared Error (MSE) on the test data: {mse}')
+      
