@@ -1,4 +1,8 @@
+import numpy as np
 import pandas as pd
+from reader import read
 
-print("Hello world")
-df = pd.read_csv('Assignment1-Data.csv')
+file_path = 'Assignment1-Data.csv'
+X, y = read(file_path)
+n, p = np.shape(X)
+print (f"{n} observations with {p} features")
