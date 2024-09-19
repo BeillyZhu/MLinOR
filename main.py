@@ -54,4 +54,5 @@ mse = mean_squared_error(y_test, y_pred)
 print(f'Best Hyperparameters: {grid_search.best_params_}')
 print(f'The Mean Squared Error (MSE) on the test data: {mse}')
 
+#Print the variance of target variables y to make a comparison with model MSE
 print(f'Variance of target: {np.var(y)}')
