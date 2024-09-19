@@ -1,0 +1,54 @@
+import numpy as np
+import pandas as pd
+from reader import read
+from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
+from sklearn.metrics import mean_squared_error
+
+
+
+# Read CSV file
+file_path = 'Assignment1-Data.csv'
+X, y = read(file_path)
+
+# Split into training sets and test sets
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, random_state=42
+)
+
+# Hyperparameter tuning
+param_grid = {
+    'n_estimators': [100, 200, 300],    # Number of trees to build
+    'learning_rate': [0.1, 0.05, 0.01], # Each tree contribution(usually between 0.01 and 0.1)
+    'max_depth': [3, 4, 5],             # Maximum tree depth
+    'min_samples_split': [2, 5, 10],    # Minimum of samples to split a leaf (avoid overfitting)
+    'min_samples_leaf': [1, 2, 4],      # Minimum of samples in each leaf (avoid overfitting)
+    'subsample': [1.0, 0.8, 0.6],       # Proportion of training data to build each tree, when < 1 a random subset of training data is chosen for each tree
+}
+
+gbr = GradientBoostingRegressor(random_state=42)
+
+grid_search = RandomizedSearchCV( # Reduces running time
+    estimator=gbr,
+    param_grid=param_grid,
+    scoring='neg_mean_squared_error',
+    cv=10,
+    n_jobs=-1,
+    verbose=1
+)
+
+grid_search.fit(X_train, y_train)
+
+best_params = grid_search.best_params_
+print("Best Hyperparameters:", best_params)
+
+# Model with best hyperparameters
+best_gbr = grid_search.best_estimator_
+
+# Predict on the test data
+y_pred = best_gbr.predict(X_test)
+
+# Calculate Mean Squared Error
+mse = mean_squared_error(y_test, y_pred)
+print(f"Mean Squared Error: {mse:.4f}")
+
