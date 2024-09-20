@@ -17,7 +17,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # Hyperparameter tuning
-param_grid = {
+param_distributions = {
     'n_estimators': [100, 200, 300],    # Number of trees to build
     'learning_rate': [0.1, 0.05, 0.01], # Each tree contribution(usually between 0.01 and 0.1)
     'max_depth': [3, 4, 5],             # Maximum tree depth
@@ -28,22 +28,22 @@ param_grid = {
 
 gbr = GradientBoostingRegressor(random_state=42)
 
-grid_search = RandomizedSearchCV( # Reduces running time
+random_search = RandomizedSearchCV( # Reduces running time
     estimator=gbr,
-    param_grid=param_grid,
+    param_distributions=param_distributions,
     scoring='neg_mean_squared_error',
     cv=10,
     n_jobs=-1,
     verbose=1
 )
 
-grid_search.fit(X_train, y_train)
+random_search.fit(X_train, y_train)
 
-best_params = grid_search.best_params_
+best_params = random_search.best_params_
 print("Best Hyperparameters:", best_params)
 
 # Model with best hyperparameters
-best_gbr = grid_search.best_estimator_
+best_gbr = random_search.best_estimator_
 
 # Predict on the test data
 y_pred = best_gbr.predict(X_test)
