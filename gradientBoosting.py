@@ -5,8 +5,6 @@ from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test_split
 from sklearn.metrics import mean_squared_error
 
-
-
 # Read CSV file
 file_path = 'Assignment1-Data.csv'
 X, y = read(file_path)
@@ -19,7 +17,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 # Hyperparameter tuning
 param_distributions = {
     'n_estimators': [100, 200, 300],    # Number of trees to build
-    'learning_rate': [0.1, 0.05, 0.01], # Each tree contribution(usually between 0.01 and 0.1)
+    'learning_rate': [0.1, 0.05, 0.01], # Each tree contribution (usually between 0.01 and 0.1)
     'max_depth': [3, 4, 5],             # Maximum tree depth
     'min_samples_split': [2, 5, 10],    # Minimum of samples to split a leaf (avoid overfitting)
     'min_samples_leaf': [1, 2, 4],      # Minimum of samples in each leaf (avoid overfitting)
@@ -34,7 +32,8 @@ random_search = RandomizedSearchCV( # Reduces running time
     scoring='neg_mean_squared_error',
     cv=10,
     n_jobs=-1,
-    verbose=1
+    verbose=1,
+    random_state=42
 )
 
 random_search.fit(X_train, y_train)
@@ -50,5 +49,5 @@ y_pred = best_gbr.predict(X_test)
 
 # Calculate Mean Squared Error
 mse = mean_squared_error(y_test, y_pred)
-print(f"Mean Squared Error: {mse:.4f}")
+print(f"Mean Squared Error: {mse}")
 
