@@ -26,7 +26,7 @@ param_distributions = {
 
 gbr = GradientBoostingRegressor(random_state=42)
 
-random_search = RandomizedSearchCV( # Reduces running time
+random_search = RandomizedSearchCV( # Lower running time than grid search
     estimator=gbr,
     param_distributions=param_distributions,
     scoring='neg_mean_squared_error',
