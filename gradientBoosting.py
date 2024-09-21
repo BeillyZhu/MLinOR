@@ -16,12 +16,12 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 # Hyperparameter tuning
 param_distributions = {
-    'n_estimators': [100, 200, 300],    # Number of trees to build
-    'learning_rate': [0.1, 0.05, 0.01], # Each tree contribution (usually between 0.01 and 0.1)
-    'max_depth': [3, 4, 5],             # Maximum tree depth
-    'min_samples_split': [2, 5, 10],    # Minimum of samples to split a leaf (avoid overfitting)
-    'min_samples_leaf': [1, 2, 4],      # Minimum of samples in each leaf (avoid overfitting)
-    'subsample': [1.0, 0.8, 0.6],       # Proportion of training data to build each tree, when < 1 a random subset of training data is chosen for each tree
+   'n_estimators': [100, 170, 180, 200, 250],   # Number of trees to build
+    'learning_rate': [0.1, 0.09, 0.085, 0.01],  # Each tree contribution(usually between 0.01 and 0.1)
+    'max_depth': [4, 5, 6],                     # Maximum tree depth
+    'min_samples_split': [5, 6],                # Minimum of samples to split a leaf (avoid overfitting)
+    'min_samples_leaf': [3, 4, 5],              # Minimum of samples in each leaf (avoid overfitting)
+    'subsample': [1.0, 0.8, 0.6],               # Proportion of training data to build each tree, when < 1 a random subset of training data is chosen for each tree
 }
 
 gbr = GradientBoostingRegressor(random_state=42)
@@ -50,4 +50,6 @@ y_pred = best_gbr.predict(X_test)
 # Calculate Mean Squared Error
 mse = mean_squared_error(y_test, y_pred)
 print(f"Mean Squared Error: {mse}")
+
+
 
