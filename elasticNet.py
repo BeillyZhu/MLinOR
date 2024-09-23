@@ -26,8 +26,8 @@ pipeline = Pipeline([
 
 # Define the hyperparameter grid
 params_grid = {
-    'elasticnet__alpha': np.linspace(0.001, 0.01, 10),     #penalty parameter (regularization strength)
-    'elasticnet__l1_ratio': [0.1, 0.3, 0.5, 0.7, 0.9, 1.0]   # mixing parameter (L1 - L2 ratio)
+    'elasticnet__alpha': np.linspace(0.001, 0.01, 10),     #penalty parameter (regularization strength, denoted with lambda in the report)
+    'elasticnet__l1_ratio': [0.1, 0.3, 0.5, 0.7, 0.9, 1.0]   # mixing parameter (L1 - L2 ratio, denoted with alpha in the report)
 }
 
 # Grid search with 10-fold Cross Validation (CV)
