@@ -1,6 +1,6 @@
 import numpy as np
 
-def read(file_path):
+def read(file_path : str):
     matrix = np.loadtxt(file_path, delimiter=',')
     X = matrix[:,2:]
     y1 = matrix[:,0]
