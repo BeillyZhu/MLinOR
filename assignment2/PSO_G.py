@@ -5,7 +5,7 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 
 # Load Dataset
-data = np.loadtxt('Assignment2-Data.csv', delimiter=',')
+data = np.loadtxt('/mnt/data/Assignment2-Data.csv', delimiter=',')
 X = data[:, 2:]
 y_classification = data[:, 0]  # y1 for classification
 y_regression = data[:, 1]  # y2 for regression
@@ -27,9 +27,10 @@ def initialize_particles(pop_size, feature_count):
     # Each particle has weights for classification and regression, plus bias terms
     return [np.random.uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)], [np.random.uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)]
 
-# ReLU function for classification
-def relu(x):
-    return np.maximum(0, x)
+# Sigmoid function for classification
+def sigmoid(x):
+    x = np.clip(x, -1000, 1000)  # Clip to prevent overflow
+    return 1 / (1 + np.exp(-x))
 
 # Fitness Function
 def evaluate_fitness(particle, X, y_class, y_reg):
@@ -40,7 +41,7 @@ def evaluate_fitness(particle, X, y_class, y_reg):
     bias_reg = particle[-1]  # Bias term for regression
 
     # Classification predictions
-    y_class_pred_prob = relu(np.dot(X, W_class) + bias_class)
+    y_class_pred_prob = sigmoid(np.dot(X, W_class) + bias_class)
     y_class_pred_prob = np.clip(y_class_pred_prob, 1e-15, 1 - 1e-15)  # Clip probabilities to avoid log loss errors
     classification_loss = log_loss(y_class, y_class_pred_prob)
 
