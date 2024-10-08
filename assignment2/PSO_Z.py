@@ -6,7 +6,7 @@ from diagnostics import *
 
 # Load Dataset
 data = np.loadtxt('./assignment2/Assignment2-Data.csv', delimiter=',')
-X, y_classification, y_regression = read("assignment2\Assignment2-Data.csv")
+X, y_classification, y_regression = read("assignment2/Assignment2-Data.csv")
 X = remove_zero_feature(X)
 
 # Split data into training and testing sets
@@ -51,7 +51,7 @@ def evaluate_fitness(particle, X, y_class, y_reg):
     # Combined fitness
     # The fitness function balances classification accuracy and regression MSE
     fitness = ALPHA * classification_loss + (1 - ALPHA) * regression_mse
-    return fitness
+    return -fitness
 
 
 # PSO Algorithm
@@ -90,8 +90,8 @@ for iteration in range(MAX_ITERATIONS):
         global_best_fitness = personal_best_fitnesses[best_particle_index]
 
     # Print best fitness of the current iteration
-    print(f"Iteration {iteration + 1}, Best Fitness: {global_best_fitness}")
+    print(f"Iteration {iteration + 1}, Best Fitness: {-global_best_fitness}")
 
 # Evaluate final solution on test data
 final_fitness = evaluate_fitness(global_best_position, X_test, y_class_test, y_reg_test)
-print(f"Final Test Fitness: {final_fitness}")
+print(f"Final Test Fitness: {-final_fitness}")
