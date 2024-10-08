@@ -5,10 +5,9 @@ from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.preprocessing import StandardScaler
 
 # Load Dataset
-data = np.loadtxt('/mnt/data/Assignment2-Data.csv', delimiter=',')
-X = data[:, 2:]
-y_classification = data[:, 0]  # y1 for classification
-y_regression = data[:, 1]  # y2 for regression
+data = np.loadtxt('./assignment2/Assignment2-Data.csv', delimiter=',')
+X, y_classification, y_regression = read("assignment2\Assignment2-Data.csv")
+X = remove_zero_feature(X)
 
 # Standardize the features
 scaler = StandardScaler()
