@@ -2,8 +2,6 @@ from reader import read
 import pandas as pd
 import numpy as np
 
-X, y1, y2 = read("assignment2\Assignment2-Data.csv")
-np.set_printoptions(suppress=True)
 
 def get_ranges(X : np.array):
     ranges = []
@@ -53,7 +51,10 @@ def correlation(file_path : str):
     corr_df = pd.DataFrame(corr_matrix, index=variables, columns=variables)
     return corr_df
 
-X_c, X_b = split_feature_type(X)
-np.savetxt("assignment2\X_continuous.csv", X_c, delimiter=',', fmt='%d')
-np.savetxt("assignment2\X_binary.csv", X_b, delimiter=',', fmt='%d')
-correlation("assignment2\Assignment2-Data.csv").to_csv("assignment2\correlation.csv")
+# X, y1, y2 = read("assignment2\Assignment2-Data.csv")
+# np.set_printoptions(suppress=True)
+
+# X_c, X_b = split_feature_type(X)
+# np.savetxt("assignment2\X_continuous.csv", X_c, delimiter=',', fmt='%d')
+# np.savetxt("assignment2\X_binary.csv", X_b, delimiter=',', fmt='%d')
+# correlation("assignment2\Assignment2-Data.csv").to_csv("assignment2\correlation.csv")

@@ -29,6 +29,7 @@ def initialize_particles(pop_size, feature_count):
 
 # Sigmoid function for classification
 def sigmoid(x):
+    x = np.clip(x, -1000, 1000)
     return 1 / (1 + np.exp(-x))
 
 # Fitness Function
