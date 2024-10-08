@@ -33,6 +33,17 @@ def split_feature_type(X : np.array):
     X_b = X_b[:, 1:]
     return X_c, X_b
 
+def remove_zero_feature(X : np.array):
+    ranges = get_ranges(X)
+    X_new = np.empty((X.shape[0], 1)) #Continuous
+    for col in range(X.shape[1]):
+        if ranges[col][0] == ranges[col][1]:
+            continue
+        else:
+            X_b = np.column_stack((X_new, X[:, col]))
+    X_new = X_new[:, 1:]
+    return X_new
+
 def correlation(file_path : str):
     variables = ["y1", "y2"]
     matrix = np.loadtxt(file_path, delimiter=',')
