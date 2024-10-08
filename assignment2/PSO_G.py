@@ -3,6 +3,7 @@ import random
 from sklearn.model_selection import KFold
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.preprocessing import StandardScaler
+from diagnostics import *
 
 # Load Dataset
 data = np.loadtxt('./assignment2/Assignment2-Data.csv', delimiter=',')
