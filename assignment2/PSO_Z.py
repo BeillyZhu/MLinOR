@@ -70,7 +70,7 @@ def evaluate_fitness(particle, X, y_class, y_reg, class_fit_func, reg_fit_func, 
 
     # Combined fitness
     # The fitness function balances classification accuracy and regression MSE
-    fitness = ALPHA * classification_loss + (1 - ALPHA) * regression_loss
+    fitness = ALPHA * classification_loss + (1 - ALPHA) * regression_loss - penalty
     return fitness
 
 def export_solution(particle, X, y_class, y_reg):
