@@ -3,24 +3,33 @@ import random
 from sklearn.model_selection import KFold
 from sklearn.metrics import log_loss, mean_squared_error
 from sklearn.preprocessing import StandardScaler
-from diagnostics import *
+
+# L1 regularization
+# 10-fold CV
+# Standardizing the features, normalizing the classification loss and regression loss in the objective
+# Standardize y_regression values
+# Comparision with the actual values in the end 
 
 # Load Dataset
-data = np.loadtxt('./assignment2/Assignment2-Data.csv', delimiter=',')
-X, y_classification, y_regression = read("assignment2\Assignment2-Data.csv")
-X = remove_zero_feature(X)
+data = np.loadtxt('Assignment2-Data.csv', delimiter=',')
+X = data[:, 2:]
+y_classification = data[:, 0]  # y1 for classification
+y_regression = data[:, 1]  # y2 for regression
 
-# Standardize the features
+# Standardize the features and the regression target
 scaler = StandardScaler()
 X = scaler.fit_transform(X)
+scaler_y = StandardScaler()
+y_regression = scaler_y.fit_transform(y_regression.reshape(-1, 1)).flatten()  # Standardize y_regression
 
 # PSO Parameters
 POPULATION_SIZE = 50  # Number of particles in the swarm
-MAX_ITERATIONS = 100  # Maximum number of iterations for the optimization process
-INERTIA_WEIGHT = 0.5  # Inertia weight to control exploration and exploitation
-COGNITIVE_COEFF = 1.5  # Cognitive coefficient to control the influence of personal best position
-SOCIAL_COEFF = 1.5  # Social coefficient to control the influence of the global best position
-ALPHA = 0.5  # Weight parameter to balance classification and regression tasks
+MAX_ITERATIONS = 200  # Maximum number of iterations for the optimization process
+INERTIA_WEIGHT = 0.8  # Inertia weight to control exploration and exploitation
+COGNITIVE_COEFF = 2.0  # Cognitive coefficient to control the influence of personal best position
+SOCIAL_COEFF = 1.0  # Social coefficient to control the influence of the global best position
+ALPHA = 0.7  # Weight parameter to balance classification and regression tasks
+LAMBDA = 0.2  # L2 Regularization strength
 
 # Initialize population (each particle is a set of weights for classification and regression)
 def initialize_particles(pop_size, feature_count):
@@ -44,13 +53,20 @@ def evaluate_fitness(particle, X, y_class, y_reg):
     y_class_pred_prob = sigmoid(np.dot(X, W_class) + bias_class)
     y_class_pred_prob = np.clip(y_class_pred_prob, 1e-15, 1 - 1e-15)  # Clip probabilities to avoid log loss errors
     classification_loss = log_loss(y_class, y_class_pred_prob)
+    # Normalize classification loss
+    classification_loss /= len(y_class)
 
     # Regression predictions
     y_reg_pred = np.dot(X, W_reg) + bias_reg
     regression_mse = mean_squared_error(y_reg, y_reg_pred)
+    # Normalize regression loss
+    regression_mse /= len(y_reg)
+
+    # L2 Regularization penalty
+    l2_penalty = LAMBDA * (np.sum(W_class**2) + np.sum(W_reg**2))
 
     # Combined fitness (lower is better for both log loss and MSE)
-    fitness = ALPHA * (1 / (1 + classification_loss)) + (1 - ALPHA) * (1 / (1 + regression_mse))
+    fitness = ALPHA * (1 / (1 + classification_loss)) + (1 - ALPHA) * (1 / (1 + regression_mse)) - l2_penalty
     return fitness
 
 # 10-Fold Cross-Validation
@@ -105,3 +121,29 @@ for train_index, val_index in kf.split(X):
     # Evaluate final solution on validation data
     final_fitness = evaluate_fitness(global_best_position, X_val, y_class_val, y_reg_val)
     print(f"Final Validation Fitness: {final_fitness}")
+
+    # Print predictions for a random sample of validation data
+    sample_size = min(10, len(X_val))  # Choose a sample size of 10 or less if validation set is smaller
+    sample_indices = np.random.choice(len(X_val), sample_size, replace=False)
+    X_sample = X_val[sample_indices]
+    y_class_sample_actual = y_class_val[sample_indices]
+    y_reg_sample_actual = scaler_y.inverse_transform(y_reg_val[sample_indices].reshape(-1, 1)).flatten()  # Inverse transform
+
+    # Predictions using the global best position
+    feature_count = X_sample.shape[1]
+    W_class = global_best_position[:feature_count]  # Weights for classification task
+    W_reg = global_best_position[feature_count:2*feature_count]  # Weights for regression task
+    bias_class = global_best_position[-2]  # Bias term for classification
+    bias_reg = global_best_position[-1]  # Bias term for regression
+
+    # Classification and regression predictions for the sample
+    y_class_pred_sample = sigmoid(np.dot(X_sample, W_class) + bias_class) >= 0.5  # Threshold at 0.5 for classification
+    y_reg_pred_sample_standardized = np.dot(X_sample, W_reg) + bias_reg
+    y_reg_pred_sample = scaler_y.inverse_transform(y_reg_pred_sample_standardized.reshape(-1, 1)).flatten()  # Inverse transform
+
+    # Print actual vs predicted values
+    print("\nSample Predictions vs Actual Values:")
+    for i in range(sample_size):
+        print(f"Sample {i + 1}:")
+        print(f"  Classification - Actual: {y_class_sample_actual[i]}, Predicted: {y_class_pred_sample[i]}")
+        print(f"  Regression - Actual: {y_reg_sample_actual[i]:.3f}, Predicted: {y_reg_pred_sample[i]:.3f}")
