@@ -26,7 +26,7 @@ scaler_y = StandardScaler()  # Standard scaler for regression target
 y_reg_train = scaler_y.fit_transform(y_reg_train.reshape(-1, 1)).flatten()  # Standardize y_regression for training
 
 # PSO Parameters
-POPULATION_SIZE = 200  # Number of particles in the swarm
+POPULATION_SIZE = 50  # Number of particles in the swarm
 MAX_ITERATIONS = 100  # Maximum number of iterations for the optimization process
 INERTIA_WEIGHT = 0.8  # Inertia weight to control exploration and exploitation
 COGNITIVE_COEFF = 2.0  # Cognitive coefficient to control the influence of personal best position
@@ -115,7 +115,7 @@ def grid_search():
                             y_class_fold_train, y_class_fold_val = y_class_train[train_index], y_class_train[val_index]
                             y_reg_fold_train, y_reg_fold_val = y_reg_train[train_index], y_reg_train[val_index]
                             
-                            # Re-initialize particles and run PSO on this fold (this step may depend on your PSO implementation)
+                            # Re-initialize particles and run PSO on this fold
                             particles, velocities = initialize_particles(POPULATION_SIZE, X_fold_train.shape[1])
                             personal_best_positions = particles.copy()
                             personal_best_fitnesses = [evaluate_fitness(p, X_fold_train, y_class_fold_train, y_reg_fold_train, class_fit, reg_fit, 2) for p in particles]
@@ -133,7 +133,7 @@ def grid_search():
                                     particles[i] = particles[i] + velocities[i]
                                     
                                     # Evaluate updated fitness
-                                    current_fitness = evaluate_fitness(particles[i], X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_MCE, inverse_MSE, 2)
+                                    current_fitness = evaluate_fitness(particles[i], X_fold_train, y_class_fold_train, y_reg_fold_train, class_fit, reg_fit, 2)
                                     
                                     # Update personal best if fitness is improved
                                     if current_fitness > personal_best_fitnesses[i]:
@@ -146,7 +146,7 @@ def grid_search():
                                     global_best_position = personal_best_positions[best_particle_index]
                                     global_best_fitness = personal_best_fitnesses[best_particle_index]
 
-                            # After PSO optimization, evaluate final fitness on validation set
+                            # After PSO optimization, evaluate final fitness on validation set. The common fitness measure uses cross entropy and MSE.
                             final_fitness = evaluate_fitness(global_best_position, X_fold_val, y_class_fold_val, y_reg_fold_val, inverse_MCE, inverse_MSE, 2)
                             fold_fitnesses.append(final_fitness)
 
@@ -157,6 +157,8 @@ def grid_search():
                         if avg_fitness > best_fitness:
                             best_fitness = avg_fitness
                             best_params = (cognitive_coeff, social_coeff, lambda_param, class_fit, reg_fit)
+                            print(f"Best Hyperparameters - COGNITIVE_COEFF: {best_params[0]}, SOCIAL_COEFF: {best_params[1]}, LAMBDA: {best_params[2]}, CLASS_FIT: {best_params[3].__name__}, REG_FIT: {best_params[4].__name__}")
+                            print(f"Best Fitness: {best_fitness}")
 
     return best_params, best_fitness
 

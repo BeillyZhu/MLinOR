@@ -38,7 +38,7 @@ def accuracy(y_true, predicted_prob):
 # F1-score, balance between recall and precision
 def F1_score(y_true, predicted_prob):
     y_pred = predicted_prob > 0.5
-    return fbeta_score(y_true, y_pred, 1)
+    return fbeta_score(y_true, y_pred, beta=1)
 
 # Area Under the ROC-curve, which plots the True Positive Rate and the False Positive Rate
 def ROC_area(y_true, predicted_prob):
