@@ -32,7 +32,7 @@ INERTIA_WEIGHT = 0.8  # Inertia weight to control exploration and exploitation
 COGNITIVE_COEFF = 2.0  # Cognitive coefficient to control the influence of personal best position
 SOCIAL_COEFF = 1.5  # Social coefficient to control the influence of the global best position
 ALPHA = 0.5  # Weight parameter to balance classification and regression tasks
-LAMBDA = 0.1 # Regularization strength
+LAMBDA = 0.01 # Regularization strength
 
 
 # Initialize population (each particle is a set of weights for classification and regression)
@@ -48,7 +48,7 @@ def initialize_particles(pop_size, feature_count):
 # Sigmoid function for classification
 def sigmoid(x):
     # Clip the input values to prevent overflow when applying the exponential function
-    x = np.clip(x, -100, 100)
+    x = np.clip(x, -500, 500)
     return 1 / (1 + np.exp(-x))
 
 # Fitness Function
@@ -61,7 +61,7 @@ def evaluate_fitness(particle, X, y_class, y_reg, class_fit_func, reg_fit_func, 
 
     # Classification predictions
     predicted_prob = sigmoid(np.dot(X, W_class) + bias_class)
-    classification_loss = class_fit_func(y_class, predicted_prob)  # Compute log loss for classification
+    classification_loss = class_fit_func(y_class, predicted_prob)  # Compute loss for classification
     classification_loss /= len(y_class)  # Normalize classification loss
 
     # Regression predictions
@@ -200,28 +200,101 @@ for i, (y_class_actual, y_class_pred, y_reg_actual, y_reg_pred) in enumerate(ran
 # Define parameter search space
 cognitive_coeff_range = np.linspace(0.5, 3.0, 26)  # Expanded range for cognitive coefficient with smaller step size
 social_coeff_range = np.linspace(0.2, 2.0, 19)  # Expanded range for social coefficient with smaller step size
-lambda_range = np.linspace(0.01, 1.0, 20)  
+lambda_range = np.linspace(0.01, 0.5, 10)  
 
-# Perform grid search to find the best hyperparameters
+# # Perform grid search to find the best hyperparameters
+# def grid_search():
+#     best_fitness = -np.inf
+#     best_params = None
+#     # Iterate over all possible combinations of hyperparameters
+#     for cognitive_coeff in cognitive_coeff_range:
+#         for social_coeff in social_coeff_range:
+#                 for lambda_param in lambda_range:
+#                     # Update global hyperparameters
+#                     global COGNITIVE_COEFF, SOCIAL_COEFF, LAMBDA
+#                     COGNITIVE_COEFF = cognitive_coeff
+#                     SOCIAL_COEFF = social_coeff
+#                     LAMBDA = lambda_param
+
+#                 # Evaluate the fitness using cross-validation (using first fold as a proxy)
+#                 fold_fitness = evaluate_fitness(global_best_position, X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_MCE, inverse_MSE, 2)
+#                 if fold_fitness > best_fitness:
+#                     best_fitness = fold_fitness
+#                     best_params = (cognitive_coeff, social_coeff, lambda_param)
+#     return best_params, best_fitness
+
 def grid_search():
-    best_fitness = -np.inf
+    best_fitness = -np.inf  # We are maximizing fitness
     best_params = None
+    
+    # Initialize KFold for cross-validation (reuse the same kf from earlier code)
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
     # Iterate over all possible combinations of hyperparameters
     for cognitive_coeff in cognitive_coeff_range:
         for social_coeff in social_coeff_range:
-                for lambda_param in lambda_range:
-                    # Update global hyperparameters
-                    global COGNITIVE_COEFF, SOCIAL_COEFF, LAMBDA
-                    COGNITIVE_COEFF = cognitive_coeff
-                    SOCIAL_COEFF = social_coeff
-                    LAMBDA = lambda_param
+            for lambda_param in lambda_range:
+                
+                # Update global hyperparameters
+                global COGNITIVE_COEFF, SOCIAL_COEFF, LAMBDA
+                COGNITIVE_COEFF = cognitive_coeff
+                SOCIAL_COEFF = social_coeff
+                LAMBDA = lambda_param
 
-                # Evaluate the fitness using cross-validation (using first fold as a proxy)
-                fold_fitness = evaluate_fitness(global_best_position, X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_MCE, inverse_MSE, 2)
-                if fold_fitness > best_fitness:
-                    best_fitness = fold_fitness
+                fold_fitnesses = []  # List to store fitness for each fold
+
+                # Perform K-fold cross-validation
+                for train_index, val_index in kf.split(X_train):
+                    # Split data into training and validation sets for current fold
+                    X_fold_train, X_fold_val = X_train[train_index], X_train[val_index]
+                    y_class_fold_train, y_class_fold_val = y_class_train[train_index], y_class_train[val_index]
+                    y_reg_fold_train, y_reg_fold_val = y_reg_train[train_index], y_reg_train[val_index]
+                    
+                    # Re-initialize particles and run PSO on this fold (this step may depend on your PSO implementation)
+                    particles, velocities = initialize_particles(POPULATION_SIZE, X_fold_train.shape[1])
+                    personal_best_positions = particles.copy()
+                    personal_best_fitnesses = [evaluate_fitness(p, X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_MCE, inverse_MSE, 2) for p in particles]
+                    global_best_position = personal_best_positions[np.argmax(personal_best_fitnesses)]
+                    global_best_fitness = max(personal_best_fitnesses)
+                    
+                    # PSO Optimization loop for the current fold
+                    for iteration in range(MAX_ITERATIONS):
+                        for i in range(POPULATION_SIZE):
+                            # Update velocity and position of each particle
+                            r1, r2 = np.random.rand(), np.random.rand()
+                            velocities[i] = (INERTIA_WEIGHT * velocities[i] +
+                                             COGNITIVE_COEFF * r1 * (personal_best_positions[i] - particles[i]) +
+                                             SOCIAL_COEFF * r2 * (global_best_position - particles[i]))
+                            particles[i] = particles[i] + velocities[i]
+                            
+                            # Evaluate updated fitness
+                            current_fitness = evaluate_fitness(particles[i], X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_MCE, inverse_MSE, 2)
+                            
+                            # Update personal best if fitness is improved
+                            if current_fitness > personal_best_fitnesses[i]:
+                                personal_best_positions[i] = particles[i]
+                                personal_best_fitnesses[i] = current_fitness
+                        
+                        # Update global best if fitness is improved
+                        best_particle_index = np.argmax(personal_best_fitnesses)
+                        if personal_best_fitnesses[best_particle_index] > global_best_fitness:
+                            global_best_position = personal_best_positions[best_particle_index]
+                            global_best_fitness = personal_best_fitnesses[best_particle_index]
+
+                    # After PSO optimization, evaluate final fitness on validation set
+                    final_fitness = evaluate_fitness(global_best_position, X_fold_val, y_class_fold_val, y_reg_fold_val, inverse_MCE, inverse_MSE, 2)
+                    fold_fitnesses.append(final_fitness)
+
+                # Calculate the average fitness across all folds
+                avg_fitness = np.mean(fold_fitnesses)
+
+                # If average fitness is better, update best hyperparameters
+                if avg_fitness > best_fitness:
+                    best_fitness = avg_fitness
                     best_params = (cognitive_coeff, social_coeff, lambda_param)
+
     return best_params, best_fitness
+
 
 # Run grid search
 best_params, best_fitness = grid_search()
