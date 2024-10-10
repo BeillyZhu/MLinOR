@@ -6,8 +6,11 @@ from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, train_test
 from sklearn.metrics import mean_squared_error
 
 # Read CSV file
-file_path = 'Assignment1-Data.csv'
-X, y = read(file_path)
+data = np.loadtxt('Assignment2-Data.csv', delimiter=',')
+X = data[:, 2:]
+y = data[:, 1]  # y2 for regression
+
+
 
 # Split into training sets and test sets
 X_train, X_test, y_train, y_test = train_test_split(
@@ -50,6 +53,7 @@ y_pred = best_gbr.predict(X_test)
 # Calculate Mean Squared Error
 mse = mean_squared_error(y_test, y_pred)
 print(f"Mean Squared Error: {mse}")
-
+for i in range(len(y_test)):
+    print(f"the actual value {y_test[i]} vs the prediction {y_pred[i]}")
 
 
