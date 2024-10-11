@@ -81,11 +81,13 @@ def evaluate_fitness(particle, X, y_class, y_reg, class_fit_func, reg_fit_func, 
 
 # Grid Search Setup for Hyperparameter Tuning
 # Define parameter search space
-cognitive_coeff_range = np.linspace(0.5, 3.0, 26)  # Expanded range for cognitive coefficient with smaller step size
-social_coeff_range = np.linspace(0.2, 2.0, 19)  # Expanded range for social coefficient with smaller step size
-lambda_range = np.linspace(0.01, 0.5, 10)  
-class_fit_range = [inverse_MCE, accuracy, F1_score, ROC_area]
-reg_fit_range = [inverse_MSE, inverse_MAE]
+cognitive_coeff_range = np.linspace(0.5, 3.0, 5)  # Expanded range for cognitive coefficient with smaller step size
+social_coeff_range = np.linspace(0.2, 2.0, 5)  # Expanded range for social coefficient with smaller step size
+lambda_range = np.linspace(0.01, 0.5, 5)  
+class_fit_range = [inverse_MCE]
+                #    , accuracy, F1_score, ROC_area]
+reg_fit_range = [inverse_MSE]
+                #  , inverse_MAE]
 
 def grid_search():
     best_fitness = -np.inf  # We are maximizing fitness
@@ -157,8 +159,9 @@ def grid_search():
                         if avg_fitness > best_fitness:
                             best_fitness = avg_fitness
                             best_params = (cognitive_coeff, social_coeff, lambda_param, class_fit, reg_fit)
-                            print(f"Best Hyperparameters - COGNITIVE_COEFF: {best_params[0]}, SOCIAL_COEFF: {best_params[1]}, LAMBDA: {best_params[2]}, CLASS_FIT: {best_params[3].__name__}, REG_FIT: {best_params[4].__name__}")
-                            print(f"Best Fitness: {best_fitness}")
+                            print("Found new best")
+                        print(f"COGNITIVE_COEFF: {cognitive_coeff}, SOCIAL_COEFF: {social_coeff}, LAMBDA: {lambda_param}, CLASS_FIT: {class_fit.__name__}, REG_FIT: {reg_fit.__name__}")
+                        print(f"Fitness: {avg_fitness}")
 
     return best_params, best_fitness
 
