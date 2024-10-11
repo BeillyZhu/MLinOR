@@ -26,14 +26,13 @@ scaler_y = StandardScaler()  # Standard scaler for regression target
 y_reg_train = scaler_y.fit_transform(y_reg_train.reshape(-1, 1)).flatten()  # Standardize y_regression for training
 
 # PSO Parameters
-POPULATION_SIZE = 300  # Number of particles in the swarm
-MAX_ITERATIONS = 200  # Maximum number of iterations for the optimization process
-INERTIA_WEIGHT = 0.7  # Inertia weight to control exploration and exploitation
-COGNITIVE_COEFF = 1.5  # Cognitive coefficient to control the influence of personal best position
-SOCIAL_COEFF = 1.5  # Social coefficient to control the influence of the global best position
+POPULATION_SIZE = 50  # Number of particles in the swarm
+MAX_ITERATIONS = 100  # Maximum number of iterations for the optimization process
+INERTIA_WEIGHT = 0.8  # Inertia weight to control exploration and exploitation
+COGNITIVE_COEFF = 1.75  # Cognitive coefficient to control the influence of personal best position
+SOCIAL_COEFF = 0.65  # Social coefficient to control the influence of the global best position
 ALPHA = 0.5  # Weight parameter to balance classification and regression tasks
-LAMBDA = 0.0001 # Regularization strength
-MAX_VELOCITY = 4
+LAMBDA = 0.01 # Regularization strength
 
 
 # Initialize population (each particle is a set of weights for classification and regression)
@@ -44,12 +43,12 @@ def initialize_particles(pop_size, feature_count):
     #   - feature_count weights for regression
     #   - 1 bias for classification
     #   - 1 bias for regression
-    return [np.random.uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)], [np.random.uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)]
+    return [np.random.RandomState(42).uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)], [np.random.RandomState(42).uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)]
 
 # Sigmoid function for classification
 def sigmoid(x):
     # Clip the input values to prevent overflow when applying the exponential function
-    x = np.clip(x, -100, 100)
+    x = np.clip(x, -500, 500)
     return 1 / (1 + np.exp(-x))
 
 # Fitness Function
@@ -62,31 +61,31 @@ def evaluate_fitness(particle, X, y_class, y_reg, class_fit_func, reg_fit_func, 
 
     # Classification predictions
     predicted_prob = sigmoid(np.dot(X, W_class) + bias_class)
-    classification_loss = class_fit_func(y_class, predicted_prob)  # Compute log loss for classification
-    classification_loss /= len(y_class)  # Normalize classification loss
+    classification_fit = class_fit_func(y_class, predicted_prob)  # Compute loss for classification
+    classification_fit /= len(y_class)  # Normalize classification loss
 
     # Regression predictions
     y_reg_pred = np.dot(X, W_reg) + bias_reg  # Predict regression values
-    regression_loss = reg_fit_func(y_reg, y_reg_pred)
-    regression_loss /= len(y_reg)          # Normalize regression loss
-
+    regression_fit = reg_fit_func(y_reg, y_reg_pred)
+    regression_fit /= len(y_reg)          # Normalize regression loss
+    
     # Penalty scaling
-    n_weights = len(W_class) + len(W_reg)
+    #n_weights = len(W_class) + len(W_reg)
 
     if penalty_dimension <= 0:
         penalty = 0
     else:
-        penalty = (LAMBDA / n_weights) * (np.sum(W_class**penalty_dimension) + np.sum(W_reg**penalty_dimension))
+        penalty = LAMBDA  * (np.sum(W_class**penalty_dimension) + np.sum(W_reg**penalty_dimension))
 
     # Combined fitness
     # The fitness function balances classification accuracy and regression MSE
-    fitness = ALPHA * classification_loss + (1 - ALPHA) * regression_loss - penalty
-   
+    fitness = ALPHA * classification_fit + (1 - ALPHA) * regression_fit - penalty
     return fitness
 
 
+
 # 5-Fold Cross-Validation on Training Set
-kf = KFold(n_splits=2, shuffle=True, random_state=42)  # Initialize 5-fold cross-validation
+kf = KFold(n_splits=5, shuffle=True, random_state=42)  # Initialize 5-fold cross-validation
 fold = 1  # Initialize fold counter
 all_samples = []  # Store samples across all folds
 all_fitness = []  # Store fitness across all folds
@@ -115,12 +114,10 @@ for train_index, val_index in kf.split(X_train):
     for iteration in range(MAX_ITERATIONS):
         for i in range(POPULATION_SIZE):
             # Update velocity for each particle
-            r1, r2 = np.random.rand(), np.random.rand()  # Random factors to add stochasticity
+            r1, r2 = np.random.RandomState(42).rand(), np.random.RandomState(42).rand()  # Random factors to add stochasticity
             velocities[i] = (INERTIA_WEIGHT * velocities[i] +
                              COGNITIVE_COEFF * r1 * (personal_best_positions[i] - particles[i]) +
                              SOCIAL_COEFF * r2 * (global_best_position - particles[i]))
-            #Veolicity clamping to prevent overshooting
-            velocities[i] = np.clip(velocities[i], -MAX_VELOCITY, MAX_VELOCITY)
             # Update position of each particle
             particles[i] = particles[i] + velocities[i]
 
@@ -156,6 +153,7 @@ for train_index, val_index in kf.split(X_train):
     y_class_pred_prob_val = sigmoid(np.dot(X_val, W_class) + bias_class)
     y_class_pred_val = (y_class_pred_prob_val >= 0.5).astype(int)  # Threshold at 0.5 for classification
     classification_accuracy = accuracy_score(y_class_val, y_class_pred_val)
+    classification_mce = log_loss(y_class_val, y_class_pred_prob_val)/ len(y_class_val)
     all_class_accuracies.append(classification_accuracy)
     print(f"Validation Classification Accuracy: {classification_accuracy:.4f}")
 
@@ -194,7 +192,7 @@ for train_index, val_index in kf.split(X_train):
     print(f"  Final Fitness: {final_fitness}")
     print(f"  Classification Accuracy: {classification_accuracy:.4f}")
     print(f"  Regression MSE: {regression_mse_val:.4f}")
-
+    print(f"  Classification MCE {classification_mce:.8f}")
 
 # Print predictions for a total of 20 samples across all folds
 print("\nSample Predictions vs Actual Values:")
@@ -203,34 +201,95 @@ for i, (y_class_actual, y_class_pred, y_reg_actual, y_reg_pred) in enumerate(ran
     print(f"  Classification - Actual: {y_class_actual}, Predicted: {y_class_pred}")
     print(f"  Regression - Actual: {y_reg_actual:.3f}, Predicted: {y_reg_pred:.3f}")
 
+
 # Grid Search Setup for Hyperparameter Tuning
 # Define parameter search space
-cognitive_coeff_range = np.linspace(0.5, 3.0, 26)  # Expanded range for cognitive coefficient with smaller step size
-social_coeff_range = np.linspace(0.2, 2.0, 19)  # Expanded range for social coefficient with smaller step size
-lambda_range = np.linspace(0.0001, 0.01, 30)  
+cognitive_coeff_range = np.linspace(0.5, 3.0, 5)  # Expanded range for cognitive coefficient with smaller step size
+social_coeff_range = np.linspace(0.2, 2.0, 5)  # Expanded range for social coefficient with smaller step size
+lambda_range = np.linspace(0.01, 0.5, 5)  
+class_fit_range = [inverse_MCE]
+                #    , accuracy, F1_score, ROC_area]
+reg_fit_range = [inverse_MSE]
+                #  , inverse_MAE]
 
-# Perform grid search to find the best hyperparameters
 def grid_search():
-    best_fitness = -np.inf
+    best_fitness = -np.inf  # We are maximizing fitness
     best_params = None
+    
+    # Initialize KFold for cross-validation (reuse the same kf from earlier code)
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
+
     # Iterate over all possible combinations of hyperparameters
     for cognitive_coeff in cognitive_coeff_range:
         for social_coeff in social_coeff_range:
-                for lambda_param in lambda_range:
-                    # Update global hyperparameters
-                    global COGNITIVE_COEFF, SOCIAL_COEFF, LAMBDA
-                    COGNITIVE_COEFF = cognitive_coeff
-                    SOCIAL_COEFF = social_coeff
-                    LAMBDA = lambda_param
+            for lambda_param in lambda_range:
+                for class_fit in class_fit_range:
+                    for reg_fit in reg_fit_range:
+                        # Update global hyperparameters
+                        global COGNITIVE_COEFF, SOCIAL_COEFF, LAMBDA
+                        COGNITIVE_COEFF = cognitive_coeff
+                        SOCIAL_COEFF = social_coeff
+                        LAMBDA = lambda_param
 
-                # Evaluate the fitness using cross-validation (using first fold as a proxy)
-                fold_fitness = evaluate_fitness(global_best_position, X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_MCE, inverse_MSE, 2)
-                if fold_fitness > best_fitness:
-                    best_fitness = fold_fitness
-                    best_params = (cognitive_coeff, social_coeff, lambda_param)
+                        fold_fitnesses = []  # List to store fitness for each fold
+
+                        # Perform K-fold cross-validation
+                        for train_index, val_index in kf.split(X_train):
+                            # Split data into training and validation sets for current fold
+                            X_fold_train, X_fold_val = X_train[train_index], X_train[val_index]
+                            y_class_fold_train, y_class_fold_val = y_class_train[train_index], y_class_train[val_index]
+                            y_reg_fold_train, y_reg_fold_val = y_reg_train[train_index], y_reg_train[val_index]
+                            
+                            # Re-initialize particles and run PSO on this fold
+                            particles, velocities = initialize_particles(POPULATION_SIZE, X_fold_train.shape[1])
+                            personal_best_positions = particles.copy()
+                            personal_best_fitnesses = [evaluate_fitness(p, X_fold_train, y_class_fold_train, y_reg_fold_train, class_fit, reg_fit, 2) for p in particles]
+                            global_best_position = personal_best_positions[np.argmax(personal_best_fitnesses)]
+                            global_best_fitness = max(personal_best_fitnesses)
+                            
+                            # PSO Optimization loop for the current fold
+                            for iteration in range(MAX_ITERATIONS):
+                                for i in range(POPULATION_SIZE):
+                                    # Update velocity and position of each particle
+                                    r1, r2 = np.random.RandomState(42).rand(), np.random.RandomState(42).rand()
+                                    velocities[i] = (INERTIA_WEIGHT * velocities[i] +
+                                                    COGNITIVE_COEFF * r1 * (personal_best_positions[i] - particles[i]) +
+                                                    SOCIAL_COEFF * r2 * (global_best_position - particles[i]))
+                                    particles[i] = particles[i] + velocities[i]
+                                    
+                                    # Evaluate updated fitness
+                                    current_fitness = evaluate_fitness(particles[i], X_fold_train, y_class_fold_train, y_reg_fold_train, class_fit, reg_fit, 2)
+                                    
+                                    # Update personal best if fitness is improved
+                                    if current_fitness > personal_best_fitnesses[i]:
+                                        personal_best_positions[i] = particles[i]
+                                        personal_best_fitnesses[i] = current_fitness
+                                
+                                # Update global best if fitness is improved
+                                best_particle_index = np.argmax(personal_best_fitnesses)
+                                if personal_best_fitnesses[best_particle_index] > global_best_fitness:
+                                    global_best_position = personal_best_positions[best_particle_index]
+                                    global_best_fitness = personal_best_fitnesses[best_particle_index]
+
+                            # After PSO optimization, evaluate final fitness on validation set. The common fitness measure uses cross entropy and MSE.
+                            final_fitness = evaluate_fitness(global_best_position, X_fold_val, y_class_fold_val, y_reg_fold_val, inverse_MCE, inverse_MSE, 2)
+                            fold_fitnesses.append(final_fitness)
+
+                        # Calculate the average fitness across all folds
+                        avg_fitness = np.mean(fold_fitnesses)
+
+                        # If average fitness is better, update best hyperparameters
+                        if avg_fitness > best_fitness:
+                            best_fitness = avg_fitness
+                            best_params = (cognitive_coeff, social_coeff, lambda_param, class_fit, reg_fit)
+                            print("Found new best")
+                        print(f"COGNITIVE_COEFF: {cognitive_coeff}, SOCIAL_COEFF: {social_coeff}, LAMBDA: {lambda_param}, CLASS_FIT: {class_fit.__name__}, REG_FIT: {reg_fit.__name__}")
+                        print(f"Fitness: {avg_fitness}")
+
     return best_params, best_fitness
+
 
 # Run grid search
 best_params, best_fitness = grid_search()
-print(f"Grid Search Best Hyperparameters - COGNITIVE_COEFF: {best_params[0]}, SOCIAL_COEFF: {best_params[1]}, LAMBDA: {best_params[2]}")
+print(f"Grid Search Best Hyperparameters - COGNITIVE_COEFF: {best_params[0]}, SOCIAL_COEFF: {best_params[1]}, LAMBDA: {best_params[2]}, CLASS_FIT: {best_params[3].__name__}, REG_FIT: {best_params[4].__name__}")
 print(f"Best Fitness from Grid Search: {best_fitness}")
