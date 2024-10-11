@@ -62,15 +62,13 @@ def evaluate_fitness(particle, X, y_class, y_reg, class_fit_func, reg_fit_func, 
     # Classification predictions
     predicted_prob = sigmoid(np.dot(X, W_class) + bias_class)
     classification_fit = class_fit_func(y_class, predicted_prob)  # Compute loss for classification
-    classification_fit /= len(y_class)  # Normalize classification loss
+
 
     # Regression predictions
     y_reg_pred = np.dot(X, W_reg) + bias_reg  # Predict regression values
     regression_fit = reg_fit_func(y_reg, y_reg_pred)
-    regression_fit /= len(y_reg)          # Normalize regression loss
+
     
-    # Penalty scaling
-    #n_weights = len(W_class) + len(W_reg)
 
     if penalty_dimension <= 0:
         penalty = 0
