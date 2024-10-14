@@ -134,12 +134,11 @@ for train_index, val_index in kf.split(X_train):
             global_best_fitness = personal_best_fitnesses[best_particle_index]
 
         # Print best fitness of the current iteration
-        print(f"Iteration {iteration + 1}, Best Fitness: {global_best_fitness}")
+        # print(f"Iteration {iteration + 1}, Best Fitness: {global_best_fitness}")
 
     # Evaluate final solution on validation data
     final_fitness = evaluate_fitness(global_best_position, X_val, y_class_val, y_reg_val, inverse_MCE, inverse_MSE, 2)
     all_fitness.append(final_fitness)
-    print(f"Final Validation Fitness: {final_fitness}")
 
     # Calculate classification accuracy and regression MSE on validation set
     W_class = global_best_position[:X_val.shape[1]]  # Weights for classification task
@@ -153,14 +152,12 @@ for train_index, val_index in kf.split(X_train):
     classification_accuracy = accuracy_score(y_class_val, y_class_pred_val)
     classification_mce = log_loss(y_class_val, y_class_pred_prob_val)/ len(y_class_val)
     all_class_accuracies.append(classification_accuracy)
-    print(f"Validation Classification Accuracy: {classification_accuracy:.4f}")
 
     # Regression predictions on validation set
     y_reg_pred_val_standardized = np.dot(X_val, W_reg) + bias_reg
     y_reg_pred_val = scaler_y.inverse_transform(y_reg_pred_val_standardized.reshape(-1, 1)).flatten()  # Inverse transform to original scale
     regression_mse_val = mean_squared_error(scaler_y.inverse_transform(y_reg_val.reshape(-1, 1)).flatten(), y_reg_pred_val)
     all_regression_mses.append(regression_mse_val)
-    print(f"Validation Regression MSE: {regression_mse_val:.4f}")
 
     # Store predictions for a random sample of validation data
     sample_size = min(10, len(X_val))  # Choose a sample size of 10 or less if validation set is smaller
@@ -193,11 +190,11 @@ for train_index, val_index in kf.split(X_train):
     print(f"  Classification MCE {classification_mce:.8f}")
 
 # Print predictions for a total of 20 samples across all folds
-print("\nSample Predictions vs Actual Values:")
-for i, (y_class_actual, y_class_pred, y_reg_actual, y_reg_pred) in enumerate(random.sample(all_samples, min(20, len(all_samples)))):
-    print(f"Sample {i + 1}:")
-    print(f"  Classification - Actual: {y_class_actual}, Predicted: {y_class_pred}")
-    print(f"  Regression - Actual: {y_reg_actual:.3f}, Predicted: {y_reg_pred:.3f}")
+# print("\nSample Predictions vs Actual Values:")
+# for i, (y_class_actual, y_class_pred, y_reg_actual, y_reg_pred) in enumerate(random.sample(all_samples, min(20, len(all_samples)))):
+    # print(f"Sample {i + 1}:")
+    # print(f"  Classification - Actual: {y_class_actual}, Predicted: {y_class_pred}")
+    # print(f"  Regression - Actual: {y_reg_actual:.3f}, Predicted: {y_reg_pred:.3f}")
 
 
 # Grid Search Setup for Hyperparameter Tuning
@@ -286,8 +283,7 @@ def grid_search():
 
     return best_params, best_fitness
 
-
 # Run grid search
-best_params, best_fitness = grid_search()
-print(f"Grid Search Best Hyperparameters - COGNITIVE_COEFF: {best_params[0]}, SOCIAL_COEFF: {best_params[1]}, LAMBDA: {best_params[2]}, CLASS_FIT: {best_params[3].__name__}, REG_FIT: {best_params[4].__name__}")
-print(f"Best Fitness from Grid Search: {best_fitness}")
+# best_params, best_fitness = grid_search()
+# print(f"Grid Search Best Hyperparameters - COGNITIVE_COEFF: {best_params[0]}, SOCIAL_COEFF: {best_params[1]}, LAMBDA: {best_params[2]}, CLASS_FIT: {best_params[3].__name__}, REG_FIT: {best_params[4].__name__}")
+# print(f"Best Fitness from Grid Search: {best_fitness}")
