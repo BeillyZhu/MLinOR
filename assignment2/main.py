@@ -75,17 +75,122 @@ def evaluate_fitness(particle, X, y_class, y_reg, class_fit_func, reg_fit_func, 
     fitness = ALPHA * classification_fit + (1 - ALPHA) * regression_fit - penalty
     return fitness
 
-# Grid Search Setup for Hyperparameter Tuning
-# Define parameter search space
-cognitive_coeff_range = np.linspace(0.5, 3.0, 5)  # Expanded range for cognitive coefficient with smaller step size
-social_coeff_range = np.linspace(0.2, 2.0, 5)  # Expanded range for social coefficient with smaller step size
-lambda_range = np.linspace(0.01, 0.5, 5)  
-class_fit_range = [inverse_CE]
-                #    , accuracy, F1_score, ROC_area]
-reg_fit_range = [inverse_MSE]
-                #  , inverse_MAE]
+
+# 5-Fold Cross-Validation on Training Set
+kf = KFold(n_splits=5, shuffle=True, random_state=42)  # Initialize 5-fold cross-validation
+fold = 1  # Initialize fold counter
+all_samples = []  # Store samples across all folds
+all_fitness = []  # Store fitness across all folds
+all_class_accuracies = []  # Store classification accuracies across all folds
+all_regression_mses = []  # Store regression MSEs across all folds
+for train_index, val_index in kf.split(X_train):
+
+    fold += 1
+
+    # Split data into training and validation sets for the current fold
+    X_fold_train, X_val = X_train[train_index], X_train[val_index]
+    y_class_fold_train, y_class_val = y_class_train[train_index], y_class_train[val_index]
+    y_reg_fold_train, y_reg_val = y_reg_train[train_index], y_reg_train[val_index]
+
+    # PSO Algorithm
+    # Initialize particles and velocities
+    particles, velocities = initialize_particles(POPULATION_SIZE, X_fold_train.shape[1])
+    # Initialize personal best positions and fitnesses for each particle
+    personal_best_positions = particles.copy()  # Each particle starts with its initial position as its personal best
+    personal_best_fitnesses = [evaluate_fitness(p, X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_CE, inverse_MSE, 2) for p in particles]  # Evaluate fitness for each particle
+    # Initialize global best position and fitness
+    global_best_position = personal_best_positions[np.argmax(personal_best_fitnesses)]  # Find the particle with the best fitness
+    global_best_fitness = max(personal_best_fitnesses)  # Set the best fitness value
+
+    # PSO main loop
+    for iteration in range(MAX_ITERATIONS):
+        for i in range(POPULATION_SIZE):
+            # Update velocity for each particle
+            r1, r2 = np.random.RandomState(42).rand(), np.random.RandomState(42).rand()  # Random factors to add stochasticity
+            velocities[i] = (INERTIA_WEIGHT * velocities[i] +
+                             COGNITIVE_COEFF * r1 * (personal_best_positions[i] - particles[i]) +
+                             SOCIAL_COEFF * r2 * (global_best_position - particles[i]))
+            # Update position of each particle
+            particles[i] = particles[i] + velocities[i]
+
+            # Evaluate the fitness of the updated particle
+            current_fitness = evaluate_fitness(particles[i], X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_CE, inverse_MSE, 2)
+
+            # Update personal best if current fitness is better
+            if current_fitness > personal_best_fitnesses[i]:
+                personal_best_positions[i] = particles[i]
+                personal_best_fitnesses[i] = current_fitness
+
+        # Update global best if a better personal best is found
+        best_particle_index = np.argmax(personal_best_fitnesses)
+        if personal_best_fitnesses[best_particle_index] > global_best_fitness:
+            global_best_position = personal_best_positions[best_particle_index]
+            global_best_fitness = personal_best_fitnesses[best_particle_index]
+
+    # Evaluate final solution on validation data
+    final_fitness = evaluate_fitness(global_best_position, X_val, y_class_val, y_reg_val, inverse_CE, inverse_MSE, 2)
+    all_fitness.append(final_fitness)
+
+    # Calculate classification accuracy and regression MSE on validation set
+    W_class = global_best_position[:X_val.shape[1]]  # Weights for classification task
+    W_reg = global_best_position[X_val.shape[1]:2*X_val.shape[1]]  # Weights for regression task
+    bias_class = global_best_position[-2]  # Bias term for classification
+    bias_reg = global_best_position[-1]  # Bias term for regression
+
+    # Classification predictions on validation set
+    y_class_pred_prob_val = sigmoid(np.dot(X_val, W_class) + bias_class)
+    y_class_pred_val = (y_class_pred_prob_val >= 0.5).astype(int)  # Threshold at 0.5 for classification
+    classification_accuracy = accuracy_score(y_class_val, y_class_pred_val)
+    classification_ce = log_loss(y_class_val, y_class_pred_prob_val)/ len(y_class_val)
+    all_class_accuracies.append(classification_accuracy)
+
+    # Regression predictions on validation set
+    y_reg_pred_val_standardized = np.dot(X_val, W_reg) + bias_reg
+    y_reg_pred_val = scaler_y.inverse_transform(y_reg_pred_val_standardized.reshape(-1, 1)).flatten()  # Inverse transform to original scale
+    regression_mse_val = mean_squared_error(scaler_y.inverse_transform(y_reg_val.reshape(-1, 1)).flatten(), y_reg_pred_val)
+    all_regression_mses.append(regression_mse_val)
+
+    # Store predictions for a random sample of validation data
+    sample_size = min(10, len(X_val))  # Choose a sample size of 10 or less if validation set is smaller
+    sample_indices = np.random.choice(len(X_val), sample_size, replace=False)  # Randomly select sample indices
+    X_sample = X_val[sample_indices]
+    y_class_sample_actual = y_class_val[sample_indices]  # Actual classification labels for the sample
+    y_reg_sample_actual = scaler_y.inverse_transform(y_reg_val[sample_indices].reshape(-1, 1)).flatten()  # Inverse transform to original scale
+
+    # Predictions using the global best position
+    feature_count = X_sample.shape[1]
+    W_class = global_best_position[:feature_count]  # Weights for classification task
+    W_reg = global_best_position[feature_count:2*feature_count]  # Weights for regression task
+    bias_class = global_best_position[-2]  # Bias term for classification
+    bias_reg = global_best_position[-1]  # Bias term for regression
+
+    # Classification and regression predictions for the sample
+    y_class_pred_sample = sigmoid(np.dot(X_sample, W_class) + bias_class) >= 0.5  # Threshold at 0.5 for classification
+    y_reg_pred_sample_standardized = np.dot(X_sample, W_reg) + bias_reg  # Predict regression values (standardized)
+    y_reg_pred_sample = scaler_y.inverse_transform(y_reg_pred_sample_standardized.reshape(-1, 1)).flatten()  # Inverse transform to original scale
+
+    # Store sample predictions and actual values
+    for i in range(sample_size):
+        all_samples.append((y_class_sample_actual[i], y_class_pred_sample[i], y_reg_sample_actual[i], y_reg_pred_sample[i]))
+     
+    # Report metrics for the fold
+    print(f"Fold {fold - 1} Summary:")
+    print(f"  Final Fitness: {final_fitness}")
+    print(f"  Classification Accuracy: {classification_accuracy:.4f}")
+    print(f"  Regression MSE: {regression_mse_val:.4f}")
+    print(f"  Classification CE {classification_ce:.8f}")
 
 def grid_search():
+
+    # Grid Search Setup for Hyperparameter Tuning
+    # Define parameter search space
+    cognitive_coeff_range = np.linspace(0.5, 3.0, 5)  # Expanded range for cognitive coefficient with smaller step size
+    social_coeff_range = np.linspace(0.2, 2.0, 5)  # Expanded range for social coefficient with smaller step size
+    lambda_range = np.linspace(0.01, 0.5, 5)  
+    class_fit_range = [inverse_CE]
+                    #    , accuracy, F1_score, ROC_area]
+    reg_fit_range = [inverse_MSE]
+                    #  , inverse_MAE]
     best_fitness = -np.inf  # We are maximizing fitness
     best_params = None
     
@@ -159,5 +264,5 @@ def grid_search():
     return best_params, best_fitness
 
 
-# Run grid search
-best_params, best_fitness = grid_search()
+# To run grid search, uncomment the line below.
+# best_params, best_fitness = grid_search()
