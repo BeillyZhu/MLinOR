@@ -80,7 +80,7 @@ def evaluate_fitness(particle, X, y_class, y_reg, class_fit_func, reg_fit_func, 
 cognitive_coeff_range = np.linspace(0.5, 3.0, 5)  # Expanded range for cognitive coefficient with smaller step size
 social_coeff_range = np.linspace(0.2, 2.0, 5)  # Expanded range for social coefficient with smaller step size
 lambda_range = np.linspace(0.01, 0.5, 5)  
-class_fit_range = [inverse_MCE]
+class_fit_range = [inverse_CE]
                 #    , accuracy, F1_score, ROC_area]
 reg_fit_range = [inverse_MSE]
                 #  , inverse_MAE]
@@ -145,7 +145,7 @@ def grid_search():
                                     global_best_fitness = personal_best_fitnesses[best_particle_index]
 
                             # After PSO optimization, evaluate final fitness on validation set. The common fitness measure uses cross entropy and MSE.
-                            final_fitness = evaluate_fitness(global_best_position, X_fold_val, y_class_fold_val, y_reg_fold_val, inverse_MCE, inverse_MSE, 2)
+                            final_fitness = evaluate_fitness(global_best_position, X_fold_val, y_class_fold_val, y_reg_fold_val, inverse_CE, inverse_MSE, 2)
                             fold_fitnesses.append(final_fitness)
 
                         # Calculate the average fitness across all folds
