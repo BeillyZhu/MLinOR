@@ -27,7 +27,7 @@ def inverse_MAE(y_true, y_pred):
 
 # Mean Cross Entropy
 def inverse_CE(y_true, predicted_prob):
-    CE = log_loss(y_true, predicted_prob)
+    CE = log_loss(y_true, predicted_prob, normalize=False)
     return (1/(1 + CE))
 
 # Accuracy
