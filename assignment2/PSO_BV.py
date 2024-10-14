@@ -150,7 +150,7 @@ for train_index, val_index in kf.split(X_train):
     y_class_pred_prob_val = sigmoid(np.dot(X_val, W_class) + bias_class)
     y_class_pred_val = (y_class_pred_prob_val >= 0.5).astype(int)  # Threshold at 0.5 for classification
     classification_accuracy = accuracy_score(y_class_val, y_class_pred_val)
-    classification_mce = log_loss(y_class_val, y_class_pred_prob_val)/ len(y_class_val)
+    classification_ce = log_loss(y_class_val, y_class_pred_prob_val)
     all_class_accuracies.append(classification_accuracy)
 
     # Regression predictions on validation set
@@ -187,7 +187,7 @@ for train_index, val_index in kf.split(X_train):
     print(f"  Final Fitness: {final_fitness}")
     print(f"  Classification Accuracy: {classification_accuracy:.4f}")
     print(f"  Regression MSE: {regression_mse_val:.4f}")
-    print(f"  Classification MCE {classification_mce:.8f}")
+    print(f"  Classification CE {classification_ce:.8f}")
 
 # Print predictions for a total of 20 samples across all folds
 # print("\nSample Predictions vs Actual Values:")
