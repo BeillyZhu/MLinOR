@@ -26,9 +26,9 @@ def inverse_MAE(y_true, y_pred):
 # y_true should be the binary label, predicted_prob should be the predicted probability
 
 # Mean Cross Entropy
-def inverse_MCE(y_true, predicted_prob):
-    MCE = log_loss(y_true, predicted_prob) / len(y_true)
-    return (1/(1 + MCE))
+def inverse_CE(y_true, predicted_prob):
+    MCE = log_loss(y_true, predicted_prob)
+    return (1/(1 + CE))
 
 # Accuracy
 def accuracy(y_true, predicted_prob):
@@ -47,5 +47,5 @@ def ROC_area(y_true, predicted_prob):
 
 # ------Universal Test Measure------
 def test_measure(ALPHA, y_reg, y_reg_pred, y_class, predicted_prob):
-    return ALPHA * inverse_MCE(y_class, predicted_prob) + (1 - ALPHA) * inverse_MSE(y_reg, y_reg_pred)
+    return ALPHA * inverse_CE(y_class, predicted_prob) + (1 - ALPHA) * inverse_MSE(y_reg, y_reg_pred)
 
