@@ -8,7 +8,7 @@ In all the code random_state = 42 serves as the seed of a Random Number Generato
 # PSO.py
 Running this file performs the PSO algorithm to train both a regression and classification model, it then uses 5-fold cross validation and for each fold using the validation data prints: the final value of the fitness function, the classification accuracy, the MSE and the cross-entropy.
 
-It also contains the code that was used for hyperparameter tuning (currently commented out, it has a long running time). The parameters in the file are set to the values found from this grid-search.
+It also contains the code that was used for hyperparameter tuning (currently commented out as it has a long running time). The parameters in the file are set to the values found from this grid-search.
 
 # reader.py
 This file contains a function that reads the input data. 
