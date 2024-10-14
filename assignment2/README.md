@@ -1,14 +1,17 @@
 ## MLinOR
 Assignment 2 for the course Machine Learning in OR (FEM21046).
 
-To install all the packages in one go, write 'pip install -r requirements.txt' in the terminal. After installing the packages and using the correct data path, the PSO.py file can already be run without any additional steps. Some further details are provided below.
+To install all the packages in one go, write 'pip install -r requirements.txt' in the terminal. After installing the packages and using the correct data path, the PSO_BV.py file can already be run without any additional steps to gain the CE and MSE values found in the report. Some further details are provided below.
 
 In all the code random_state = 42 serves as the seed of a Random Number Generator. This ensures that the results are the same for each run, to guarantee reproducibility. The data is randomly split into 80% training set and 20% validation set. 
 
-# PSO.py
-Running this file performs the PSO algorithm to train both a regression and classification model, it then uses 5-fold cross validation and for each fold using the validation data prints: the final value of the fitness function, the classification accuracy, the MSE and the cross-entropy.
+# PSO_BV.py
+Running this file performs the PSO algorithm to train both a regression and classification model, it then uses 5-fold cross validation. For each fold using the validation data, the following is printed: the final value of the fitness function, the classification accuracy, the MSE and the cross-entropy.
 
-It also contains the code that was used for hyperparameter tuning (currently commented out as it has a long running time). The parameters in the file are set to the values found from this grid-search.
+It also contains the grid_search function that was used for hyperparameter tuning (should be commented out to avoid the long running time). The parameters in the file are already set to the values found from this grid-search.
+
+# gradientBoosting.py
+This file fits a model on the current data using the gradient boosting method developed in the first assignment. As a way to evaluate the performance of the regression model found from PSO, we calculate the MSE using gradient boosting to compare to the MSE from PSO.
 
 # reader.py
 This file contains a function that reads the input data. 
