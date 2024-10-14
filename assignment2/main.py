@@ -6,7 +6,6 @@ from sklearn.preprocessing import StandardScaler
 from diagnostics import *
 from metrics import *
 
-
 # Load Dataset
 data = np.loadtxt('./assignment2/Assignment2-Data.csv', delimiter=',')
 X = data[:, 2:]  # Features starting from the third column
@@ -29,11 +28,10 @@ y_reg_train = scaler_y.fit_transform(y_reg_train.reshape(-1, 1)).flatten()  # St
 POPULATION_SIZE = 50  # Number of particles in the swarm
 MAX_ITERATIONS = 100  # Maximum number of iterations for the optimization process
 INERTIA_WEIGHT = 0.8  # Inertia weight to control exploration and exploitation
-COGNITIVE_COEFF = 2.0  # Cognitive coefficient to control the influence of personal best position
-SOCIAL_COEFF = 1.5  # Social coefficient to control the influence of the global best position
+COGNITIVE_COEFF = 1.75  # Cognitive coefficient to control the influence of personal best position
+SOCIAL_COEFF = 0.65  # Social coefficient to control the influence of the global best position
 ALPHA = 0.5  # Weight parameter to balance classification and regression tasks
 LAMBDA = 0.01 # Regularization strength
-
 
 # Initialize population (each particle is a set of weights for classification and regression)
 def initialize_particles(pop_size, feature_count):
@@ -43,7 +41,7 @@ def initialize_particles(pop_size, feature_count):
     #   - feature_count weights for regression
     #   - 1 bias for classification
     #   - 1 bias for regression
-    return [np.random.uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)], [np.random.uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)]
+    return [np.random.RandomState(42).uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)], [np.random.RandomState(42).uniform(-1, 1, 2 * feature_count + 2) for _ in range(pop_size)]
 
 # Sigmoid function for classification
 def sigmoid(x):
@@ -62,17 +60,15 @@ def evaluate_fitness(particle, X, y_class, y_reg, class_fit_func, reg_fit_func, 
     # Classification predictions
     predicted_prob = sigmoid(np.dot(X, W_class) + bias_class)
     classification_fit = class_fit_func(y_class, predicted_prob)  # Compute loss for classification
-   
 
     # Regression predictions
     y_reg_pred = np.dot(X, W_reg) + bias_reg  # Predict regression values
     regression_fit = reg_fit_func(y_reg, y_reg_pred)
- 
 
     if penalty_dimension <= 0:
         penalty = 0
     else:
-        penalty = LAMBDA * (np.sum(W_class**penalty_dimension) + np.sum(W_reg**penalty_dimension))
+        penalty = LAMBDA  * (np.sum(W_class**penalty_dimension) + np.sum(W_reg**penalty_dimension))
 
     # Combined fitness
     # The fitness function balances classification accuracy and regression MSE
@@ -128,7 +124,7 @@ def grid_search():
                             for iteration in range(MAX_ITERATIONS):
                                 for i in range(POPULATION_SIZE):
                                     # Update velocity and position of each particle
-                                    r1, r2 = np.random.rand(), np.random.rand()
+                                    r1, r2 = np.random.RandomState(42).rand(), np.random.RandomState(42).rand()
                                     velocities[i] = (INERTIA_WEIGHT * velocities[i] +
                                                     COGNITIVE_COEFF * r1 * (personal_best_positions[i] - particles[i]) +
                                                     SOCIAL_COEFF * r2 * (global_best_position - particles[i]))
@@ -159,14 +155,9 @@ def grid_search():
                         if avg_fitness > best_fitness:
                             best_fitness = avg_fitness
                             best_params = (cognitive_coeff, social_coeff, lambda_param, class_fit, reg_fit)
-                            print("Found new best")
-                        print(f"COGNITIVE_COEFF: {cognitive_coeff}, SOCIAL_COEFF: {social_coeff}, LAMBDA: {lambda_param}, CLASS_FIT: {class_fit.__name__}, REG_FIT: {reg_fit.__name__}")
-                        print(f"Fitness: {avg_fitness}")
-
+                           
     return best_params, best_fitness
 
 
 # Run grid search
 best_params, best_fitness = grid_search()
-print(f"Grid Search Best Hyperparameters - COGNITIVE_COEFF: {best_params[0]}, SOCIAL_COEFF: {best_params[1]}, LAMBDA: {best_params[2]}, CLASS_FIT: {best_params[3].__name__}, REG_FIT: {best_params[4].__name__}")
-print(f"Best Fitness from Grid Search: {best_fitness}")
