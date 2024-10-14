@@ -103,7 +103,7 @@ for train_index, val_index in kf.split(X_train):
     particles, velocities = initialize_particles(POPULATION_SIZE, X_fold_train.shape[1])
     # Initialize personal best positions and fitnesses for each particle
     personal_best_positions = particles.copy()  # Each particle starts with its initial position as its personal best
-    personal_best_fitnesses = [evaluate_fitness(p, X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_MCE, inverse_MSE, 2) for p in particles]  # Evaluate fitness for each particle
+    personal_best_fitnesses = [evaluate_fitness(p, X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_CE, inverse_MSE, 2) for p in particles]  # Evaluate fitness for each particle
     # Initialize global best position and fitness
     global_best_position = personal_best_positions[np.argmax(personal_best_fitnesses)]  # Find the particle with the best fitness
     global_best_fitness = max(personal_best_fitnesses)  # Set the best fitness value
@@ -120,7 +120,7 @@ for train_index, val_index in kf.split(X_train):
             particles[i] = particles[i] + velocities[i]
 
             # Evaluate the fitness of the updated particle
-            current_fitness = evaluate_fitness(particles[i], X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_MCE, inverse_MSE, 2)
+            current_fitness = evaluate_fitness(particles[i], X_fold_train, y_class_fold_train, y_reg_fold_train, inverse_CE, inverse_MSE, 2)
 
             # Update personal best if current fitness is better
             if current_fitness > personal_best_fitnesses[i]:
@@ -137,7 +137,7 @@ for train_index, val_index in kf.split(X_train):
         # print(f"Iteration {iteration + 1}, Best Fitness: {global_best_fitness}")
 
     # Evaluate final solution on validation data
-    final_fitness = evaluate_fitness(global_best_position, X_val, y_class_val, y_reg_val, inverse_MCE, inverse_MSE, 2)
+    final_fitness = evaluate_fitness(global_best_position, X_val, y_class_val, y_reg_val, inverse_CE, inverse_MSE, 2)
     all_fitness.append(final_fitness)
 
     # Calculate classification accuracy and regression MSE on validation set
@@ -202,7 +202,7 @@ for train_index, val_index in kf.split(X_train):
 cognitive_coeff_range = np.linspace(0.5, 3.0, 5)  # Expanded range for cognitive coefficient with smaller step size
 social_coeff_range = np.linspace(0.2, 2.0, 5)  # Expanded range for social coefficient with smaller step size
 lambda_range = np.linspace(0.01, 0.5, 5)  
-class_fit_range = [inverse_MCE]
+class_fit_range = [inverse_CE]
                 #    , accuracy, F1_score, ROC_area]
 reg_fit_range = [inverse_MSE]
                 #  , inverse_MAE]
@@ -267,7 +267,7 @@ def grid_search():
                                     global_best_fitness = personal_best_fitnesses[best_particle_index]
 
                             # After PSO optimization, evaluate final fitness on validation set. The common fitness measure uses cross entropy and MSE.
-                            final_fitness = evaluate_fitness(global_best_position, X_fold_val, y_class_fold_val, y_reg_fold_val, inverse_MCE, inverse_MSE, 2)
+                            final_fitness = evaluate_fitness(global_best_position, X_fold_val, y_class_fold_val, y_reg_fold_val, inverse_CE, inverse_MSE, 2)
                             fold_fitnesses.append(final_fitness)
 
                         # Calculate the average fitness across all folds
