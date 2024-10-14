@@ -5,8 +5,8 @@ To install all the packages in one go, write 'pip install -r requirements.txt' i
 
 In all the code random_state = 42 serves as the seed of a Random Number Generator. This ensures that the results are the same for each run, to guarantee reproducibility. The data is randomly split into 80% training set and 20% validation set. 
 
-# PSO_BV.py
-Running this file performs the PSO algorithm to train both a regression and classification model, it then uses 5-fold cross validation. For each fold using the validation data, the following is printed: the final value of the fitness function, the classification accuracy, the MSE and the cross-entropy.
+# main.py
+Running this file performs the PSO algorithm to train both a regression and classification model, it then uses 5-fold cross validation. For each fold using the validation data, the following is printed: the final value of the fitness function, the classification accuracy, the MSE and the MCE.
 
 It also contains the grid_search function that was used for hyperparameter tuning (should be commented out to avoid the long running time). The parameters in the file are already set to the values found from this grid-search.
 
